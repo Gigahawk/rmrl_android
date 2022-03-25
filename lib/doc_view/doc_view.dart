@@ -38,6 +38,18 @@ class _DocViewPageState extends State<DocViewPage> {
       return fname.endsWith("metadata");
     }).toList();
 
+    // TODO: Replace with a widget that properly handles reMarkable file structure
+    // Should take:
+    // - the global list of files
+    // - the current parent (defaults to "")
+    // Behavior:
+    // - Filter list for metadata files
+    // - Filter list for files matching current parent
+    // - Sort list by name
+    // - Sort list by type (folders vs files)
+    // - Pass filtered/sorted list to gridview builder
+    //    - Builder should create a folder for folder types, and a image preview for the files
+
     return ListView.builder(
       itemCount: metaDataFiles!.length,
       itemBuilder: (context, index) {
