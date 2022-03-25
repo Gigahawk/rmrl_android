@@ -7,7 +7,7 @@ import 'package:rmrl_android/shared_prefs/shared_prefs.dart';
 class OnboardingSelect extends PageViewModel {
   bool srcSelect;
   VoidCallback onSuccess;
-  Text folderPath;
+  String? folderPath;
 
   static const String srcTitle = "Select Source Folder";
   static const String dstTitle = "Select Destination Folder";
@@ -33,7 +33,7 @@ class OnboardingSelect extends PageViewModel {
             },
             child: const Text("Select Folder")
         ),
-        folderPath
+        Text(folderPath ?? "")
       ],
     )
   );

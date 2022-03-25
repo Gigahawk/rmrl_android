@@ -71,10 +71,6 @@ class _MyHomePageState extends State<MyHomePage> {
     bool validPath = result.item1;
     Uri? uri = result.item2;
     String? path = uri?.toString();
-    print("Path");
-    print(path);
-    print("validPath");
-    print(validPath);
 
     if (validPath) {
       setState(() {
@@ -85,12 +81,14 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       });
       enableNext();
+    } else {
+      enableNext(enable: false);
     }
   }
 
-  void enableNext() {
+  void enableNext({bool enable = true}) {
     setState(() {
-      nextEnabled = true;
+      nextEnabled = enable;
     });
   }
 
@@ -99,14 +97,55 @@ class _MyHomePageState extends State<MyHomePage> {
     state.next();
   }
 
+  void prevPage() {
+    IntroductionScreenState state = _globalKey.currentState as IntroductionScreenState;
+    state.previous();
+  }
+
+  void finish() async {
+    bool foldersUnique = await checkFoldersUnique();
+    if (foldersUnique) {
+      print("OK");
+    } else {
+      showError();
+    }
+  }
+
+  Future<void> showError() async {
+    return showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Error"),
+            content: const Text("Selected folders must be unique"),
+            actions: <Widget>[
+              ElevatedButton(
+                child: const Text("OK"),
+                onPressed: () {
+                  prevPage();
+                  Navigator.of(context).pop();
+                },
+              ),
+            ]
+          );
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     ElevatedButton nextButton = ElevatedButton(
         onPressed: nextEnabled ? nextPage : null,
         child: const Text("Next")
     );
-    Text srcPathWidget = Text(srcPath ?? "");
-    Text dstPathWidget = Text(dstPath ?? "");
+    ElevatedButton backButton = ElevatedButton(
+        onPressed: prevPage,
+        child: const Text("Back")
+    );
+    ElevatedButton doneButton = ElevatedButton(
+        onPressed: nextEnabled ? finish : null,
+        child: const Text("Done")
+    );
     IntroductionScreen introScreen = IntroductionScreen(
       key: _globalKey,
       pages: [
@@ -114,12 +153,12 @@ class _MyHomePageState extends State<MyHomePage> {
         OnboardingSelect(
           srcSelect: true,
           onSuccess: validateSrc,
-          folderPath: srcPathWidget
+          folderPath: srcPath
         ),
         OnboardingSelect(
           srcSelect: false,
           onSuccess: validateDst,
-          folderPath: dstPathWidget
+          folderPath: dstPath
         ),
       ],
       done: const Text("Done"),
@@ -128,19 +167,17 @@ class _MyHomePageState extends State<MyHomePage> {
       onChange: (page) {
         switch(page) {
           case 1:
-            setState(() {
-              nextEnabled = false;
-            });
+            validateSrc();
             break;
           case 2:
-            setState(() {
-              nextEnabled = false;
-            });
+            validateDst();
             break;
         }
       },
+      showBackButton: true,
+      overrideBack: backButton,
       overrideNext: nextButton,
-      overrideDone: nextButton,
+      overrideDone: doneButton,
     );
     return introScreen;
   }

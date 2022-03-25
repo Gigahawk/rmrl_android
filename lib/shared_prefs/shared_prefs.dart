@@ -33,3 +33,15 @@ Future<Tuple2<bool, Uri?>> checkFolderPath(bool srcSelect) async {
   bool isPersisted = await isPersistedUri(uri);
   return Tuple2(isPersisted, uri);
 }
+
+Future<bool> checkFoldersUnique() async {
+  Uri? srcUri = await getFolderPath(true);
+  Uri? dstUri = await getFolderPath(false);
+  if (srcUri == null || dstUri == null) {
+    return false;
+  }
+  if (srcUri == dstUri) {
+    return false;
+  }
+  return true;
+}
