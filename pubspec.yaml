@@ -30,7 +30,10 @@ dependencies:
   flutter:
     sdk: flutter
   introduction_screen: ^3.0.1
-  shared_storage: ^0.2.0
+  shared_storage:
+    git:
+      url: https://github.com/LaksCastro/shared-storage.git
+      ref: 5ad2682
   shared_preferences: ^2.0.13
   tuple: ^2.0.0
   flutter_native_splash: ^2.1.1

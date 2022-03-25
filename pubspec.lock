@@ -198,6 +198,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.5"
+  permission_handler:
+    dependency: transitive
+    description:
+      name: permission_handler
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "8.3.0"
+  permission_handler_platform_interface:
+    dependency: transitive
+    description:
+      name: permission_handler_platform_interface
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.7.0"
   petitparser:
     dependency: transitive
     description:
@@ -292,9 +306,11 @@ packages:
   shared_storage:
     dependency: "direct main"
     description:
-      name: shared_storage
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "."
+      ref: "5ad2682"
+      resolved-ref: "5ad2682633da79ecf99b15ffe503c1460bbb3856"
+      url: "https://github.com/LaksCastro/shared-storage.git"
+    source: git
     version: "0.2.0"
   sky_engine:
     dependency: transitive
