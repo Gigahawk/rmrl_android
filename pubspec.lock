@@ -7,7 +7,7 @@ packages:
       name: archive
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.2.2"
+    version: "3.3.0"
   args:
     dependency: transitive
     description:
@@ -110,7 +110,7 @@ packages:
       name: flutter_native_splash
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.1"
+    version: "2.1.2+1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -134,7 +134,7 @@ packages:
       name: introduction_screen
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   js:
     dependency: transitive
     description:
@@ -307,9 +307,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "5ad2682"
-      resolved-ref: "5ad2682633da79ecf99b15ffe503c1460bbb3856"
-      url: "https://github.com/LaksCastro/shared-storage.git"
+      ref: "627cba8"
+      resolved-ref: "627cba8821e1706e6f936ffb2431e8eab27a0029"
+      url: "https://github.com/Gigahawk/shared-storage.git"
     source: git
     version: "0.2.0"
   sky_engine:
@@ -393,7 +393,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.4"
+    version: "2.5.1"
   xdg_directories:
     dependency: transitive
     description:

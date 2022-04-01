@@ -3,14 +3,21 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:rmrl_android/doc_view/simple_card.dart';
+import 'package:rmrl_android/navigation/navigation.dart';
+import 'package:rmrl_android/remarkable/document.dart';
 import 'package:rmrl_android/shared_prefs/shared_prefs.dart';
 import 'package:shared_storage/shared_storage.dart';
 
 import 'key_value_text.dart';
 
-class DocViewPage extends StatefulWidget {
 
-  const DocViewPage({Key? key}) : super(key: key);
+class DocViewPage extends StatefulWidget {
+  final String parent;
+
+  const DocViewPage({
+    Key? key,
+    this.parent = ""
+  }) : super(key: key);
 
   @override
   _DocViewPageState createState() => _DocViewPageState();
@@ -18,13 +25,12 @@ class DocViewPage extends StatefulWidget {
 
 class _DocViewPageState extends State<DocViewPage> {
   Uri? uri;
-  List<PartialDocumentFile>? _files;
-  List<PartialDocumentFile>? metaDataFiles;
+  List<RemarkableDocument> documents = [];
 
   StreamSubscription<PartialDocumentFile>? _listener;
 
   Widget _buildFileList() {
-    if (_files!.isEmpty) {
+    if (documents.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -32,11 +38,6 @@ class _DocViewPageState extends State<DocViewPage> {
         ),
       );
     }
-
-    metaDataFiles = _files!.where((f) {
-      String fname = f.data?[DocumentFileColumn.displayName];
-      return fname.endsWith("metadata");
-    }).toList();
 
     // TODO: Replace with a widget that properly handles reMarkable file structure
     // Should take:
@@ -50,12 +51,17 @@ class _DocViewPageState extends State<DocViewPage> {
     // - Pass filtered/sorted list to gridview builder
     //    - Builder should create a folder for folder types, and a image preview for the files
 
-    return ListView.builder(
-      itemCount: metaDataFiles!.length,
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 400,
+          childAspectRatio: 8.5 / 10,
+          crossAxisSpacing: 5,
+          mainAxisSpacing: 5),
+      itemCount: documents.length,
       itemBuilder: (context, index) {
-        final file = metaDataFiles![index];
+        final doc = documents[index];
 
-        return FileTile(partialFile: file);
+        return DocTile(document: doc);
       },
     );
   }
@@ -86,67 +92,78 @@ class _DocViewPageState extends State<DocViewPage> {
       DocumentFileColumn.mimeType,
     ];
 
-    _listener = documentUri?.listFiles(columns).listen((file) {
-      /// Append new files to the current file list
-      _files == null ? _files = [file] : _files!.add(file);
-
-      /// Update the state only if the widget is currently showing
-      if (mounted) {
-        setState(() {});
+    _listener = documentUri?.listFiles(columns).listen(
+      (file) async {
+        String fileName = file.data?[DocumentFileColumn.displayName];
+        if (file.metadata?.isDirectory == false) {
+         if (fileName.endsWith("metadata")) {
+           RemarkableDocument doc = RemarkableDocument(metadataFile: file);
+           String? parent = await doc.getParent();
+           if(parent == widget.parent) {
+             documents.add(doc);
+             setState(() {});
+           }
+         }
+        }
       }
-    });
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Inside ${uri?.pathSegments.last}')),
-      body: _files == null
-          ? const Center(child: CircularProgressIndicator())
-          : _buildFileList(),
+      body: _buildFileList(),
     );
   }
 }
 
-class FileTile extends StatefulWidget {
-  final PartialDocumentFile partialFile;
+class DocTile extends StatefulWidget {
+  final RemarkableDocument document;
 
-  const FileTile({Key? key, required this.partialFile}) : super(key: key);
+  const DocTile({Key? key, required this.document}) : super(key: key);
 
   @override
-  _FileTileState createState() => _FileTileState();
+  _DocTileState createState() => _DocTileState();
 }
 
-class _FileTileState extends State<FileTile> {
-  PartialDocumentFile get file => widget.partialFile;
+class _DocTileState extends State<DocTile> {
+  RemarkableDocument get document => widget.document;
 
   static const _size = Size.square(150);
+
+  String documentName = "";
 
   Uint8List? imageBytes;
 
   void _loadThumbnailIfAvailable() async {
-    final rootUri = file.metadata?.rootUri;
-    final documentId = file.data?[DocumentFileColumn.id];
+    //final rootUri = file.metadata?.rootUri;
+    //final documentId = file.data?[DocumentFileColumn.id];
 
-    if (rootUri == null || documentId == null) return;
+    //if (rootUri == null || documentId == null) return;
 
-    final bitmap = await getDocumentThumbnail(
-      rootUri: rootUri,
-      documentId: documentId,
-      width: _size.width,
-      height: _size.height,
-    );
+    //final bitmap = await getDocumentThumbnail(
+    //  rootUri: rootUri,
+    //  documentId: documentId,
+    //  width: _size.width,
+    //  height: _size.height,
+    //);
 
-    if (bitmap == null || !mounted) return;
+    //if (bitmap == null || !mounted) return;
 
-    setState(() => imageBytes = bitmap.bytes);
+    //setState(() => imageBytes = bitmap.bytes);
   }
 
   @override
   void initState() {
     super.initState();
 
-    _loadThumbnailIfAvailable();
+    _loadValues();
+  }
+
+  void _loadValues() async {
+    documentName = await document.getName();
+    setState(() {});
   }
 
   void _openListFilesPage(Uri uri) {
@@ -156,75 +173,26 @@ class _FileTileState extends State<FileTile> {
   Widget build(BuildContext context) {
     return SimpleCard(
       onTap: () async {
-        if (file.metadata?.isDirectory == false) {
-          final document = await file.metadata!.uri!.toDocumentFile();
-
-          print(document!.uri.toString());
-
-          final onNewLine = getDocumentContent(file.metadata!.uri!);
-
-          onNewLine.listen((newLine) {
-            print('New line: $newLine');
-          });
+        var docType = await document.getDocType();
+        var m = await document.getMetadata();
+        var documentName = await document.getName();
+        var parent = await document.getParent();
+        var uuid = document.uuid;
+        print(m);
+        print(m.runtimeType);
+        print(documentName);
+        print(uuid);
+        print(docType);
+        print(parent);
+        if (docType == DocumentType.collection) {
+          navigatorKey.currentState?.push(
+            MaterialPageRoute(builder: (_) => DocViewPage(parent: uuid))
+          );
         }
       },
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: imageBytes == null
-              ? Container(
-            height: _size.height,
-            width: _size.width,
-            color: Colors.grey,
-          )
-              : Image.memory(
-            imageBytes!,
-            height: _size.height,
-            width: _size.width,
-            fit: BoxFit.contain,
-          ),
-        ),
-        KeyValueText(
-          entries: {
-            'name': '${file.data?[DocumentFileColumn.displayName]}',
-            'type': '${file.data?[DocumentFileColumn.mimeType]}',
-            'size': '${file.data?[DocumentFileColumn.size]}',
-            'lastModified': '${(() {
-              if (file.data?[DocumentFileColumn.lastModified] == null) {
-                return null;
-              }
-
-              final millisecondsSinceEpoch =
-              file.data?[DocumentFileColumn.lastModified]!;
-
-              final date = DateTime.fromMillisecondsSinceEpoch(
-                millisecondsSinceEpoch,
-              );
-
-              return date.toIso8601String();
-            })()}',
-            'summary': '${file.data?[DocumentFileColumn.summary]}',
-            'id': '${file.data?[DocumentFileColumn.id]}',
-            'parentUri': '${file.metadata?.parentUri}',
-            'rootUri': '${file.metadata?.rootUri}',
-            'uri': '${file.metadata?.uri}',
-          },
-        ),
-        if (file.metadata?.isDirectory ?? false)
-          TextButton(
-            onPressed: () async {
-              if (file.metadata?.isDirectory ?? false) {
-                final uri = await buildTreeDocumentUri(
-                  file.metadata!.rootUri!.authority,
-                  file.data![DocumentFileColumn.id]!,
-                );
-
-                _openListFilesPage(uri!);
-              }
-            },
-            child: const Text('Open folder'),
-          ),
-      ],
+        Text(documentName)
+      ]
     );
   }
 }
