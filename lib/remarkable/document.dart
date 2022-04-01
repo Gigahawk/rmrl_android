@@ -1,7 +1,10 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:flutter/widgets.dart';
+import 'package:rmrl_android/remarkable/filesystem.dart';
 import 'package:shared_storage/shared_storage.dart';
 
 enum DocumentType {
@@ -10,6 +13,7 @@ enum DocumentType {
 }
 
 class RemarkableDocument {
+  final RemarkableFileSystem fs = RemarkableFileSystem();
   final PartialDocumentFile metadataFile;
   //Stream<String> metadataStream;
   String uuid;
@@ -24,6 +28,21 @@ class RemarkableDocument {
     uuid = metadataFile.data?[DocumentFileColumn.displayName].split(".")[0]
   {
     loadData();
+  }
+
+  Future<Widget> getThumbnail() async {
+    PartialDocumentFile? file = await fs.getThumbnail(uuid);
+    if (file == null) return const Text("No thumbnail");
+
+    Uint8List? data = await getDocumentContentBytes(
+      file.metadata!.uri!
+    );
+    if(data == null) {
+      return const Text("No thumbnail");
+    }
+
+    Image thumbnail = Image.memory(data);
+    return thumbnail;
   }
 
   void loadData() async {

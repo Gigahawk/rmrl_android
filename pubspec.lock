@@ -16,7 +16,7 @@ packages:
     source: hosted
     version: "2.3.0"
   async:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: async
       url: "https://pub.dartlang.org"
@@ -307,8 +307,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "627cba8"
-      resolved-ref: "627cba8821e1706e6f936ffb2431e8eab27a0029"
+      ref: "77d8274"
+      resolved-ref: "77d8274a5686d1ec0db7fb5ce1b38784c0d63f15"
       url: "https://github.com/Gigahawk/shared-storage.git"
     source: git
     version: "0.2.0"
@@ -338,6 +338,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.1.0"
+  stream_transform:
+    dependency: "direct main"
+    description:
+      name: stream_transform
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0"
   string_scanner:
     dependency: transitive
     description:

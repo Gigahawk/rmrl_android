@@ -33,10 +33,12 @@ dependencies:
   shared_storage:
     git:
       url: https://github.com/Gigahawk/shared-storage.git
-      ref: 627cba8
+      ref: 77d8274
   shared_preferences: ^2.0.13
   tuple: ^2.0.0
+  stream_transform: ^2.0.0
   flutter_native_splash: ^2.1.1
+  async: ^2.8.0
 
 dev_dependencies:
   flutter_test:
