@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:async/async.dart';
 import 'package:flutter/cupertino.dart';
@@ -86,5 +87,42 @@ class RemarkableFileSystem {
 
     if(thumbNails.isEmpty) return null;
     return thumbNails[idx];
+  }
+
+  String getFullPath(PartialDocumentFile file) {
+    Uri? parentUri = file.metadata?.parentUri;
+    String parentPath = parentUri?.path ?? "";
+    Uri? rootUri = file.metadata?.rootUri;
+    String rootPath = rootUri?.path ?? "";
+    String fileName = file.data?[DocumentFileColumn.displayName];
+
+    String parent = parentPath.substring(rootPath.length);
+
+    if(parent.isNotEmpty) {
+      parent = parent.substring(3);
+      return "$parent/$fileName";
+    }
+
+    return fileName;
+  }
+
+  Future<Map<String, Uint8List?>> getData(String uuid) async {
+    Iterable<PartialDocumentFile> files = _rawFiles.where(
+      (PartialDocumentFile file) {
+        if (!(file.metadata?.isDirectory ?? false)) {
+          String fullPath = getFullPath(file);
+          if (fullPath.contains(uuid)) {
+            return true;
+          }
+        }
+        return false;
+    });
+
+    Map<String, Uint8List?> fileMap = {
+      for (PartialDocumentFile file in files) 
+        getFullPath(file) : await getDocumentContentBytes(file.metadata!.uri!)
+    };
+
+    return fileMap;
   }
 }

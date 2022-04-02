@@ -1,8 +1,9 @@
+<!--        android:name="${applicationName}" -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.gigahawk.rmrlmobile.rmrl_android">
    <application
         android:label="rmrl_android"
-        android:name="${applicationName}"
+        android:name="com.chaquo.python.android.PyApplication"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

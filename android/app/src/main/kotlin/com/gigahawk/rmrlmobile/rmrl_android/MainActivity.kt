@@ -3,21 +3,37 @@ package com.gigahawk.rmrlmobile.rmrl_android
 import android.annotation.TargetApi
 import android.content.ContentUris
 import android.content.Context
+import android.content.SharedPreferences
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Build.VERSION_CODES
+import android.os.Bundle
 import android.os.Environment
+import android.os.PersistableBundle
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.util.Log
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import com.chaquo.python.PyException
+import com.chaquo.python.PyObject
+import com.chaquo.python.Python
+import com.chaquo.python.android.AndroidPlatform
+import java.io.FileOutputStream
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.gigahawk.rmrl_android"
+
+    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
+        super.onCreate(savedInstanceState, persistentState)
+        if(!Python.isStarted()) {
+            Python.start(AndroidPlatform(this))
+        }
+    }
 
     @RequiresApi(VERSION_CODES.LOLLIPOP)
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
@@ -33,11 +49,63 @@ class MainActivity: FlutterActivity() {
                     val uriString: String = call.argument<String>("uri")!!
                     result.success(isAcceptableFolderUriString(uriString))
                 }
+                "convertToPdf" -> {
+                    val uuid: String? = call.argument<String>("uuid")
+                    val fileData: HashMap<String, ByteArray?>? =
+                        call.argument<HashMap<String, ByteArray?>>("fileData")
+                    val docName: String? = call.argument<String>("docName")
+
+                    if (uuid == null || docName == null || fileData == null) {
+                        result.error("argsError", "missing args", null)
+                    } else {
+                        convertDocument(uuid, docName, fileData)
+                        result.success(null)
+                    }
+                }
                 else -> {
                     result.notImplemented();
                 }
             }
         }
+    }
+
+    @RequiresApi(VERSION_CODES.LOLLIPOP)
+    private fun convertDocument(uuid: String, docName: String, fileData: HashMap<String, ByteArray?>) {
+        val py = Python.getInstance()
+        val module: PyObject = py.getModule("convert")
+        val source: PyObject =  module.callAttr("ChaquopySource", uuid)
+
+        for((path: String, data: ByteArray?) in fileData) {
+            if(data != null) {
+                source.callAttr("insert_file", path, data)
+                Log.i("convert", "adding file")
+                Log.i("convert", path)
+            } else {
+                Log.w("convert", "File is empty?")
+                Log.w("convert", path)
+            }
+        }
+
+        val pdf: ByteArray = module.callAttr("convert", source).toJava(ByteArray::class.java)
+
+        Log.i("convert", "writing to output dir")
+        val sp: SharedPreferences = context.getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
+        val outPathUriStr: String = sp.getString(
+            "flutter." + "dstFolderKey", null) ?: return
+        val outPathUri: Uri = getUriFromString(outPathUriStr)
+        val outFileUri: Uri = DocumentsContract.createDocument(
+            context.contentResolver,
+            outPathUri,
+            "application/pdf",
+            docName
+        ) ?: return
+
+        contentResolver.openFileDescriptor(outFileUri, "w")?.use {
+            FileOutputStream(it.fileDescriptor).use { it ->
+                it.write(pdf)
+            }
+        }
+        return
     }
 
     @RequiresApi(VERSION_CODES.LOLLIPOP)
@@ -185,4 +253,5 @@ class MainActivity: FlutterActivity() {
     fun isGooglePhotosUri(uri: Uri): Boolean {
         return "com.google.android.apps.photos.content" == uri.authority
     }
+
 }

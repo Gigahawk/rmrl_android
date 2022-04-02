@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:rmrl_android/remarkable/filesystem.dart';
+import 'package:rmrl_android/util/native.dart';
 import 'package:shared_storage/shared_storage.dart';
 
 enum DocumentType {
@@ -82,6 +83,16 @@ class RemarkableDocument {
   Future<Map<String, dynamic>?> getMetadata() async {
     await ready.future;
     return metadata;
+  }
+
+  Future<Map<String, Uint8List?>> getData() async {
+    return await fs.getData(uuid);
+  }
+
+  Future<void> convertDocument() async {
+    Map<String, Uint8List?> fileData = await getData();
+    String docName = await getName();
+    convertToPdf(uuid, docName, fileData);
   }
 
 

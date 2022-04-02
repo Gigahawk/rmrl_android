@@ -120,21 +120,13 @@ class _DocTileState extends State<DocTile> {
     return SimpleCard(
       onTap: () async {
         var docType = await document.getDocType();
-        var m = await document.getMetadata();
-        var documentName = await document.getName();
-        var parent = await document.getParent();
         var uuid = document.uuid;
-        document.getThumbnail();
-        print(m);
-        print(m.runtimeType);
-        print(documentName);
-        print(uuid);
-        print(docType);
-        print(parent);
         if (docType == DocumentType.collection) {
           navigatorKey.currentState?.push(
             MaterialPageRoute(builder: (_) => DocViewPage(parent: uuid))
           );
+        } else {
+          document.convertDocument();
         }
       },
       children: [
