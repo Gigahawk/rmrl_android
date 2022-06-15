@@ -5,6 +5,7 @@ import 'package:rmrl_android/doc_view/simple_card.dart';
 import 'package:rmrl_android/navigation/navigation.dart';
 import 'package:rmrl_android/remarkable/document.dart';
 import 'package:rmrl_android/remarkable/filesystem.dart';
+import 'package:rmrl_android/util/native.dart';
 
 
 class DocViewPage extends StatefulWidget {
@@ -98,6 +99,7 @@ class _DocTileState extends State<DocTile> {
 
   String documentName = "";
   Widget image = const Text("No image");
+  Widget icon = const Icon(Icons.file_copy);
 
   Uint8List? imageBytes;
 
@@ -109,9 +111,18 @@ class _DocTileState extends State<DocTile> {
   }
 
   void _loadValues() async {
+    DocumentType? docType = await document.getDocType();
     documentName = await document.getName();
     setState(() {});
     image = await document.getThumbnail();
+    if (docType == null) {
+      icon = const Icon(Icons.question_mark);
+    } else if(docType == DocumentType.collection) {
+      icon = const Icon(Icons.folder);
+    } else {
+      // TODO: figure out a better icon
+      icon = const Icon(Icons.file_copy);
+    }
     setState(() {});
   }
 
@@ -126,12 +137,43 @@ class _DocTileState extends State<DocTile> {
             MaterialPageRoute(builder: (_) => DocViewPage(parent: uuid))
           );
         } else {
-          document.convertDocument();
+          showDialog(
+            barrierDismissible: false,
+            context: context,
+            builder: (_) {
+              return Dialog(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical:20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 5),
+                      Text("Exporting"),
+                    ]
+                  )
+                )
+              );
+            }
+          );
+          Uri? uri = await document.convertDocument();
+          Navigator.of(context).pop();
+          if (uri != null) {
+            openPdfFromUri(uri);
+          }
         }
       },
       children: [
-        image,
-        Text(documentName)
+        Expanded(child: image),
+        Row(
+            children: [
+              icon,
+              const SizedBox(width: 5),
+              Expanded(
+                child: Text(documentName),
+              )
+            ],
+        ),
       ]
     );
   }

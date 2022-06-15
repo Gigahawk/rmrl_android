@@ -18,22 +18,36 @@ Future<bool> isAcceptableFolderUri(Uri uri) async {
   }
 }
 
-Future<bool> convertToPdf(String uuid, String docName, Map<String, Uint8List?> fileData) async {
+Future<Uri?> convertToPdf(String uuid, String docName, Map<String, Uint8List?> fileData) async {
   try {
-    await platform.invokeMethod(
+    String uriString = await platform.invokeMethod(
         'convertToPdf',
         <String, dynamic>{
           'uuid': uuid,
           'docName': docName,
           'fileData': fileData
         });
-    return true;
+    Uri uri = Uri.parse(uriString);
+    return uri;
   } on PlatformException catch (e) {
     print("Error converting to pdf $uuid");
     print(e.message);
-    return false;
+    return null;
   }
+}
 
+Future openPdfFromUri(Uri uri) async {
+  try {
+    return await platform.invokeMethod(
+        "openPdfFromUriString",
+        <String, String>{
+          "uri": uri.toString()
+        });
+  } on PlatformException catch (e) {
+    print("Error opening to pdf $uri");
+    print(e.message);
+    return;
+}
 }
 
 Future<String> getFolderPathStringFromUri(Uri uri) async {

@@ -3,6 +3,8 @@ package com.gigahawk.rmrlmobile.rmrl_android
 import android.annotation.TargetApi
 import android.content.ContentUris
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.Intent
 import android.content.SharedPreferences
 import android.database.Cursor
 import android.net.Uri
@@ -19,7 +21,6 @@ import androidx.annotation.RequiresApi
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import com.chaquo.python.PyException
 import com.chaquo.python.PyObject
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
@@ -58,9 +59,17 @@ class MainActivity: FlutterActivity() {
                     if (uuid == null || docName == null || fileData == null) {
                         result.error("argsError", "missing args", null)
                     } else {
-                        convertDocument(uuid, docName, fileData)
-                        result.success(null)
+                        val uri: Uri? = convertDocument(uuid, docName, fileData)
+                        if (uri == null) {
+                            result.error("convertPdfError", "Could not convert PDF", null)
+                        } else {
+                            result.success(uri.toString())
+                        }
                     }
+                }
+                "openPdfFromUriString" -> {
+                    val uriString: String = call.argument<String>("uri")!!
+                    result.success(openPdfFromUriString(uriString))
                 }
                 else -> {
                     result.notImplemented();
@@ -70,7 +79,19 @@ class MainActivity: FlutterActivity() {
     }
 
     @RequiresApi(VERSION_CODES.LOLLIPOP)
-    private fun convertDocument(uuid: String, docName: String, fileData: HashMap<String, ByteArray?>) {
+    private fun openPdfFromUriString(uriString: String) {
+        val uri: Uri = Uri.parse(uriString)
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            setDataAndType(uri, "application/pdf")
+        }
+        context.startActivity(Intent.createChooser(intent, "Select app"))
+    }
+
+    @RequiresApi(VERSION_CODES.LOLLIPOP)
+    private fun convertDocument(uuid: String, docName: String, fileData: HashMap<String, ByteArray?>) : Uri? {
         val py = Python.getInstance()
         val module: PyObject = py.getModule("convert")
         val source: PyObject =  module.callAttr("ChaquopySource", uuid)
@@ -91,21 +112,21 @@ class MainActivity: FlutterActivity() {
         Log.i("convert", "writing to output dir")
         val sp: SharedPreferences = context.getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
         val outPathUriStr: String = sp.getString(
-            "flutter." + "dstFolderKey", null) ?: return
+            "flutter." + "dstFolderKey", null) ?: return null
         val outPathUri: Uri = getUriFromString(outPathUriStr)
         val outFileUri: Uri = DocumentsContract.createDocument(
             context.contentResolver,
             outPathUri,
             "application/pdf",
             docName
-        ) ?: return
+        ) ?: return null
 
         contentResolver.openFileDescriptor(outFileUri, "w")?.use {
             FileOutputStream(it.fileDescriptor).use { it ->
                 it.write(pdf)
             }
         }
-        return
+        return outFileUri
     }
 
     @RequiresApi(VERSION_CODES.LOLLIPOP)
